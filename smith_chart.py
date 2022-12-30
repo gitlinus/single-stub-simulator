@@ -30,15 +30,7 @@ class SmithChart:
         turtle.pendown()
         turtle.setpos(x=x2*self.scaling,y=y2*self.scaling)
     
-    def plotNormalizedImpedance(self, Z_0, Z_L: complex, VSWR=True):
-        Gamma_L = (Z_L-Z_0) / (Z_L+Z_0) # reflection coefficient
-        if VSWR: # plot the voltage standing wave ratio (VSWR) circle
-            self.drawCircle(x=0,y=0,r=abs(Gamma_L))
-            turtle.penup()
-            turtle.home()
-            turtle.setpos(x=0,y=abs(Gamma_L)*self.scaling)
-            turtle.write("VSWR", align='right', font=('Arial', str(self.font), 'normal'))
-        z = complex(Z_L/Z_0) # normalized impedance
+    def plotSmithChartPoint(self, z, label=True, precision=3): # plot the point z = r + jx on the Smith chart
         # find the intersection of resistance circle at z.real and reactance circle at z.imag
         # the intersection lies on line y=mx+b
         r_L=z.real
@@ -54,8 +46,24 @@ class SmithChart:
         turtle.home()
         turtle.setpos(x=x_2*self.scaling,y=y_2*self.scaling)
         turtle.pencolor("yellow")
-        turtle.write(z, align='right', font=('Arial', str(self.font), 'normal'))
+        if label:
+            z_label = complex(round(z.real,precision), round(z.imag,precision))
+            turtle.write(z_label, align='right', font=('Arial', str(self.font), 'normal'))
         turtle.dot()
+    
+    def plotNormalizedImpedance(self, Z_0, Z_in: complex, VSWR=True, admittance=False):
+        Gamma_L = (Z_in-Z_0) / (Z_in+Z_0) # reflection coefficient
+        if VSWR: # plot the voltage standing wave ratio (VSWR) circle
+            self.drawCircle(x=0,y=0,r=abs(Gamma_L))
+            turtle.penup()
+            turtle.home()
+            turtle.setpos(x=0,y=abs(Gamma_L)*self.scaling)
+            turtle.write("VSWR", align='right', font=('Arial', str(self.font), 'normal'))
+        z = complex(Z_in/Z_0) # normalized impedance
+        self.plotSmithChartPoint(z)
+        if admittance:
+            y = 1 / z
+            self.plotSmithChartPoint(y)
 
     def drawResistanceCircles(self, r_L_list=[0, 0.5, 1, 2, 3], label=True):
         # ( Gamma_r - r_L/(1+r_L) ) ^ 2 + Gamma_i ^ 2 = ( 1/(1+r_L) ) ^ 2
@@ -109,5 +117,5 @@ class SmithChart:
     
 a=SmithChart()
 a.drawChart()
-a.plotNormalizedImpedance(50,complex(75,-25)) # example
+a.plotNormalizedImpedance(50,complex(75,-25),VSWR=True,admittance=True) # example
 turtle.mainloop()
