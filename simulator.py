@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import HORIZONTAL, ttk
+from tkinter import ttk
 from PIL import ImageTk, Image
 import cmath
 import math
@@ -36,7 +36,7 @@ class Simulator(tk.Frame):
         self.rightParameterFrame = tk.Frame(master=self.rightFrame, width=width*(1-self.ratio), height=self.height/2, bg="#D3D3D3")
         self.rightParameterFrame.grid(column=0,row=2)
         self.rightParameterFrame.grid_propagate(False)
-    
+
         row=0
         tk.Label(self.rightSelectFrame, text="", bg="#A9A9A9", font=("Times", 14)).grid(column=0,row=row) # spacer
         row+=1
@@ -54,7 +54,7 @@ class Simulator(tk.Frame):
         self.stubTermination = tk.StringVar(value="open")
         self.stubTerminationChosen = ttk.Combobox(self.rightSelectFrame, width=20, textvariable=self.stubTermination)
         self.stubTerminationChosen['values'] = ('open','short')
-        self.stubTerminationChosen.grid(column=1,row=2)
+        self.stubTerminationChosen.grid(column=1,row=row)
         self.stubTerminationChosen.current()
         self.stubTerminationChosen['state'] = 'readonly'
         self.stubTerminationChosen.bind('<<ComboboxSelected>>',self.handleStubTermSelection)
@@ -65,9 +65,10 @@ class Simulator(tk.Frame):
 
         row=0
         self.Z_1 = complex(self.defaultLoadImpedance)
+        self.Z_stub = cmath.inf if self.stubTermination.get()=="open" else 0
         self.inputImpedance = self.Z_1
-        self.inputImpedanceText = tk.StringVar(value=f"Zin = {self.inputImpedance} Ω, Z1={self.Z_1} Ω")
-        self.inputImpedanceEntry = tk.Entry(self.rightParameterFrame, textvariable=self.inputImpedanceText, state="readonly", font=("Times", 14), width=40).grid(column=0,row=row)
+        self.inputImpedanceText = tk.StringVar(value=f"Zin = {self.inputImpedance} Ω, Z1 = {self.Z_1} Ω, Zstub = {self.Z_stub} Ω")
+        self.inputImpedanceEntry = tk.Entry(self.rightParameterFrame, textvariable=self.inputImpedanceText, state="readonly", font=("Times", 14), width=50).grid(column=0,row=row)
         row+=1
 
         tk.Label(self.rightParameterFrame, text="Parameters", bg="#D3D3D3", font=("Times", 20)).grid(column=0,row=row)
@@ -114,34 +115,46 @@ class Simulator(tk.Frame):
         self.master.diagram = diagram = ImageTk.PhotoImage(img)
         self.diagramCanvas.create_image(0,0,image=diagram,anchor='nw')
         self.diagramCanvas.update()
-    
+
     def handleStubTypeSelection(self, event):
-        print(f"{self.stubType.get()} selected")
-        print(f"Displaying file {self.stubType2filename[self.stubType.get()]}")
+        # print(f"{self.stubType.get()} selected")
+        # print(f"Displaying file {self.stubType2filename[self.stubType.get()]}")
         self.displayDiagram(self.stubType2filename[self.stubType.get()])
         self.master.focus()
-    
+        self.updateInputImpedance()
+
     def handleStubTermSelection(self, event):
-        print(f"{self.stubTermination.get()} termination selected")
+        # print(f"{self.stubTermination.get()} termination selected")
         self.master.focus()
-    
+        self.updateInputImpedance()
+
     def handleCharImpedanceInput(self, event):
         try:
             Z_0 = complex(self.charImpedance.get())
-            self.charImpedance.set(Z_0)
-            self.master.focus()
+            if(abs(Z_0)>0):
+                self.charImpedance.set(Z_0)
+            else:
+                self.charImpedance.set(self.defaultCharImpedance)
         except:
             self.charImpedance.set(self.defaultCharImpedance)
         self.updateInputImpedance()
+        self.master.focus()
 
     def handleLoadImpedanceInput(self, event):
-        try: 
-            Z_0 = complex(self.loadImpedance.get())
-            self.loadImpedance.set(Z_0)
-            self.master.focus()
+        try:
+            Z_L = complex(self.loadImpedance.get())
+            if(Z_L.real >= 0):
+                self.loadImpedance.set(Z_L)
+            else:
+                self.loadImpedance.set(self.defaultLoadImpedance)
         except:
-            self.loadImpedance.set(self.defaultLoadImpedance)
+            if(self.loadImpedance.get()=="inf"):
+                Z_L = complex(cmath.inf)
+                self.loadImpedance.set(Z_L)
+            else:
+                self.loadImpedance.set(self.defaultLoadImpedance)
         self.updateInputImpedance()
+        self.master.focus()
 
     def getDistance(self, event): # get currentl length of d
         self.distance = self.distanceSlider.get()
@@ -149,21 +162,79 @@ class Simulator(tk.Frame):
 
     def getLength(self, event): # get currentl length of l
         self.length = self.lengthSlider.get()
+        self.updateInputImpedance()
 
     def updateInputImpedance(self):
-        # Z_1 = Z_0 * (Z_L + j*Z_0*tan(βl)) / (Z_0 + j*Z_L*tan(βd)) where β = 2π/λ
+        # For Z_1
+        # Z_1 = Z_0 * (Z_L + j*Z_0*tan(βd)) / (Z_0 + j*Z_L*tan(βd)) where β = 2π/λ
         Z_0 = complex(self.charImpedance.get())
         Z_L = complex(self.loadImpedance.get())
         j = complex(0,1)
         d = float(self.distance)
-        if self.distance == 0.25: # quarter wavelength transformer
-            self.Z_1 = Z_0**2 / Z_L
-        elif self.distance == 0.5: # half wavelength transformer
-            self.Z_1 = Z_L
+        if Z_L != 0 and Z_L != cmath.inf:
+            if self.distance == 0.25: # quarter wavelength transformer
+                self.Z_1 = Z_0**2 / Z_L
+            elif self.distance == 0.5: # half wavelength transformer
+                self.Z_1 = Z_L
+            else:
+                self.Z_1 = Z_0 * (Z_L + j*Z_0*math.tan(2*math.pi * d)) / (Z_0 + j*Z_L*math.tan(2*math.pi * d))
+        elif Z_L == cmath.inf:
+            # Z_1 = -j*Z_0*cot(βd)
+            if self.length == 0.25:
+                self.Z_1 = 0
+            elif self.length == 0 or self.length == 0.5:
+                self.Z_1 = cmath.inf
+            else:
+                self.Z_1 = -j*Z_0/math.tan(2*math.pi * d)
+        else: # Z_L == 0
+            # Z_1 = j*Z_0*tan(βd)
+            if self.length == 0.25:
+                self.Z_1 = cmath.inf
+            elif self.length == 0 or self.length == 0.5:
+                self.Z_1 = 0
+            else:
+                self.Z_1 = j*Z_0*math.tan(2*math.pi * d)
+
+        # For Z_stub
+        l = float(self.length)
+        if self.stubTermination.get() == 'open':
+            # Z_stub = -j*Z_0*cot(βl)
+            if self.length == 0.25:
+                self.Z_stub = 0
+            elif self.length == 0 or self.length == 0.5:
+                self.Z_stub = cmath.inf
+            else:
+                self.Z_stub = -j*Z_0/math.tan(2*math.pi * l)
+        elif self.stubTermination.get() == 'short':
+            # Z_stub = j*Z_0*tan(βl)
+            if self.length == 0.25:
+                self.Z_stub = cmath.inf
+            elif self.length == 0 or self.length == 0.5:
+                self.Z_stub = 0
+            else:
+                self.Z_stub = j*Z_0*math.tan(2*math.pi * l)
         else:
-            self.Z_1 = Z_0 * (Z_L + j*Z_0*math.tan(2*math.pi * d)) / (Z_0 + j*Z_L*math.tan(2*math.pi * d))
+            assert False, "WTF"
+
         self.Z_1 = complex(round(self.Z_1.real,self.precision),round(self.Z_1.imag,self.precision))
-        self.inputImpedanceText.set(f"Zin = {self.inputImpedance} Ω, Z1={self.Z_1} Ω")
+        self.Z_stub = complex(round(self.Z_stub.real,self.precision),round(self.Z_stub.imag,self.precision))
+        if self.stubType.get() == 'series stub':
+            self.inputImpedance = self.Z_1 + self.Z_stub
+            self.inputImpedance = complex(round(self.inputImpedance.real,self.precision),round(self.inputImpedance.imag,self.precision))
+            self.inputImpedanceText.set(f"Zin = {self.inputImpedance} Ω, Z1 = {self.Z_1} Ω, Zstub = {self.Z_stub} Ω")
+        elif self.stubType.get() == 'shunt stub':
+            # show admittance instead
+            Y_1 = 1/self.Z_1 if self.Z_1 != 0 else cmath.inf
+            Y_stub = 1/self.Z_stub if self.Z_stub != 0 else cmath.inf
+            Yin = Y_1 + Y_stub
+            Y_1 = complex(round(Y_1.real,self.precision),round(Y_1.imag,self.precision))
+            Y_stub = complex(round(Y_stub.real,self.precision),round(Y_stub.imag,self.precision))
+            Yin = complex(round(Yin.real,self.precision),round(Yin.imag,self.precision))
+            self.inputImpedanceText.set(f"Yin = {Yin} S, Y1 = {Y_1} S, Ystub = {Y_stub} S")
+            self.inputImpedance = 1 / Yin if Yin != 0 else cmath.inf
+            self.inputImpedance = complex(round(self.inputImpedance.real,self.precision),round(self.inputImpedance.imag,self.precision))
+        else:
+            assert False, "WTF"
 
 root = tk.Tk()
 a = Simulator(root)
