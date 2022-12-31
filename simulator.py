@@ -37,21 +37,24 @@ class Simulator(tk.Frame):
         self.rightParameterFrame.grid(column=0,row=2)
         self.rightParameterFrame.grid_propagate(False)
     
-        self.rightSelectFrame.columnconfigure(0,weight=1)
-        self.rightSelectFrame.rowconfigure(1,weight=1)
-
-        self.stubType = tk.StringVar(value="Select stub type")
+        row=0
+        tk.Label(self.rightSelectFrame, text="", bg="#A9A9A9", font=("Times", 14)).grid(column=0,row=row) # spacer
+        row+=1
+        tk.Label(self.rightSelectFrame, text="Select stub type:", bg="#A9A9A9", font=("Times", 16)).grid(column=0,row=row)
+        self.stubType = tk.StringVar(value="series stub")
         self.stubTypeChosen = ttk.Combobox(self.rightSelectFrame, width=20, textvariable=self.stubType)
         self.stubTypeChosen['values'] = ('series stub','shunt stub')
-        self.stubTypeChosen.grid(column=0,row=0)
+        self.stubTypeChosen.grid(column=1,row=row)
+        row+=1
         self.stubTypeChosen.current()
         self.stubTypeChosen['state'] = 'readonly'
         self.stubTypeChosen.bind('<<ComboboxSelected>>',self.handleStubTypeSelection)
 
-        self.stubTermination = tk.StringVar(value="Select stub termination")
+        tk.Label(self.rightSelectFrame, text="Select stub termination:", bg="#A9A9A9", font=("Times", 16)).grid(column=0,row=row)
+        self.stubTermination = tk.StringVar(value="open")
         self.stubTerminationChosen = ttk.Combobox(self.rightSelectFrame, width=20, textvariable=self.stubTermination)
         self.stubTerminationChosen['values'] = ('open','short')
-        self.stubTerminationChosen.grid(column=0,row=1)
+        self.stubTerminationChosen.grid(column=1,row=2)
         self.stubTerminationChosen.current()
         self.stubTerminationChosen['state'] = 'readonly'
         self.stubTerminationChosen.bind('<<ComboboxSelected>>',self.handleStubTermSelection)
