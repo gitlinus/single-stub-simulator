@@ -23,29 +23,43 @@ class SmithChart:
             self.font = font
             self.screen = screen
             self.screen.bgcolor("black")
+            self.screen.setworldcoordinates(llx=-1*self.scaling, lly=-1*self.scaling, urx=1*self.scaling, ury=1*self.scaling)
             self.smith_turtle = turtle.RawTurtle(self.screen)
             self.smith_turtle.hideturtle()
             self.smith_turtle.speed(0)
+            self.drawChart()
+
+    def drawCircle(self, x, y, r, theta=360, colour="white", new_turtle=None): # draw a circle centered at (x,y) with radius r
+        use_this_turtle = self.smith_turtle
+        if new_turtle:
+            use_this_turtle = new_turtle
+
+        use_this_turtle.pencolor(colour)
+        use_this_turtle.penup()
+        use_this_turtle.home()
+        use_this_turtle.setpos(x=x*self.scaling,y=(y-r)*self.scaling)
+        use_this_turtle.pendown()
+        use_this_turtle.circle(r*self.scaling, extent=theta)
     
-    def drawCircle(self, x, y, r, theta=360, colour="white"): # draw a circle centered at (x,y) with radius r
-        self.smith_turtle.pencolor(colour)
-        self.smith_turtle.penup()
-        self.smith_turtle.home()
-        self.smith_turtle.setpos(x=x*self.scaling,y=(y-r)*self.scaling)
-        self.smith_turtle.pendown()
-        self.smith_turtle.circle(r*self.scaling, extent=theta)
+    def drawLine(self, x1, y1, x2, y2, colour="white", new_turtle=None): # draw line from (x1, y1) to (x2, y2)
+        use_this_turtle = self.smith_turtle
+        if new_turtle:
+            use_this_turtle = new_turtle
+
+        use_this_turtle.pencolor(colour)
+        use_this_turtle.penup()
+        use_this_turtle.home()
+        use_this_turtle.setpos(x=x1*self.scaling,y=y1*self.scaling)
+        use_this_turtle.pendown()
+        use_this_turtle.setpos(x=x2*self.scaling,y=y2*self.scaling)
     
-    def drawLine(self, x1, y1, x2, y2, colour="white"): # draw line from (x1, y1) to (x2, y2)
-        self.smith_turtle.pencolor(colour)
-        self.smith_turtle.penup()
-        self.smith_turtle.home()
-        self.smith_turtle.setpos(x=x1*self.scaling,y=y1*self.scaling)
-        self.smith_turtle.pendown()
-        self.smith_turtle.setpos(x=x2*self.scaling,y=y2*self.scaling)
-    
-    def plotSmithChartPoint(self, z, label=True, precision=3): # plot the point z = r + jx on the Smith chart
+    def plotSmithChartPoint(self, z, label=True, precision=3, new_turtle=None): # plot the point z = r + jx on the Smith chart
         # find the intersection of resistance circle at z.real and reactance circle at z.imag
         # the intersection lies on line y=mx+b
+        use_this_turtle = self.smith_turtle
+        if new_turtle:
+            use_this_turtle = new_turtle
+
         r_L=z.real
         x_L=z.imag
         m=x_L*(r_L/(1+r_L)-1)
@@ -55,28 +69,32 @@ class SmithChart:
         a_2=b**2-(1/(1+r_L))**2+(r_L/(1+r_L))**2
         x_2=(-a_1-math.sqrt(a_1**2-4*a_0*a_2))/(2*a_0) # x_1, y_1 is trivial solution (1,0)
         y_2=m*x_2+b
-        self.smith_turtle.penup()
-        self.smith_turtle.home()
-        self.smith_turtle.setpos(x=x_2*self.scaling,y=y_2*self.scaling)
-        self.smith_turtle.pencolor("yellow")
+        use_this_turtle.penup()
+        use_this_turtle.home()
+        use_this_turtle.setpos(x=x_2*self.scaling,y=y_2*self.scaling)
+        use_this_turtle.pencolor("yellow")
         if label:
             z_label = complex(round(z.real,precision), round(z.imag,precision))
-            self.smith_turtle.write(z_label, align='right', font=('Arial', str(self.font), 'normal'))
-        self.smith_turtle.dot()
-    
-    def plotNormalizedImpedance(self, Z_0, Z_in: complex, VSWR=True, admittance=False):
+            use_this_turtle.write(z_label, align='right', font=('Arial', str(self.font), 'normal'))
+        use_this_turtle.dot()
+
+    def plotNormalizedImpedance(self, Z_0, Z_in: complex, VSWR=True, admittance=False, new_turtle=None):
+        use_this_turtle = self.smith_turtle
+        if new_turtle:
+            use_this_turtle = new_turtle
+
         Gamma_L = (Z_in-Z_0) / (Z_in+Z_0) # reflection coefficient
         if VSWR: # plot the voltage standing wave ratio (VSWR) circle
-            self.drawCircle(x=0,y=0,r=abs(Gamma_L))
-            self.smith_turtle.penup()
-            self.smith_turtle.home()
-            self.smith_turtle.setpos(x=0,y=abs(Gamma_L)*self.scaling)
-            self.smith_turtle.write("VSWR", align='right', font=('Arial', str(self.font), 'normal'))
+            self.drawCircle(x=0,y=0,r=abs(Gamma_L),new_turtle=new_turtle)
+            use_this_turtle.penup()
+            use_this_turtle.home()
+            use_this_turtle.setpos(x=0,y=abs(Gamma_L)*self.scaling)
+            use_this_turtle.write("VSWR", align='right', font=('Arial', str(self.font), 'normal'))
         z = complex(Z_in/Z_0) # normalized impedance
-        self.plotSmithChartPoint(z)
+        self.plotSmithChartPoint(z, new_turtle=new_turtle)
         if admittance:
             y = 1 / z
-            self.plotSmithChartPoint(y)
+            self.plotSmithChartPoint(y, new_turtle=new_turtle)
 
     def drawResistanceCircles(self, r_L_list=[0, 0.5, 1, 2, 3], label=True):
         # ( Gamma_r - r_L/(1+r_L) ) ^ 2 + Gamma_i ^ 2 = ( 1/(1+r_L) ) ^ 2
