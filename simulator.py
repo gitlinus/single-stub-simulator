@@ -3,6 +3,7 @@ from tkinter import ttk
 from PIL import ImageTk, Image
 import cmath
 import math
+import turtle
 
 class Simulator(tk.Frame):
 
@@ -24,7 +25,12 @@ class Simulator(tk.Frame):
 
         self.leftFrame = tk.Frame(master=self.rootFrame, width=width*self.ratio, height=self.height, bg="red")
         self.leftFrame.grid(column=0,row=0)
-        self.rightFrame = tk.Frame(master=self.rootFrame, width=width*(1-self.ratio), height=self.height, bg="blue")
+
+        self.leftCanvas = tk.Canvas(self.leftFrame, width=width*self.ratio, height=self.height, bg="white")
+        self.leftCanvas.grid(column=0,row=0)
+        self.screen = turtle.TurtleScreen(self.leftCanvas)
+
+        self.rightFrame = tk.Frame(master=self.rootFrame, width=width*(1-self.ratio), height=self.height, bg="white")
         self.rightFrame.grid(column=1,row=0)
 
         self.rightSelectFrame = tk.Frame(master=self.rightFrame, width=width*(1-self.ratio), height=self.height/2*1/3, bg="#A9A9A9")
