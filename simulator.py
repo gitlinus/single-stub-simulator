@@ -70,9 +70,15 @@ class Simulator(tk.Frame):
         self.inputImpedanceText = tk.StringVar(value=f"Zin = {self.inputImpedance} Ω, Z1 = {self.Z_1} Ω, Zstub = {self.Z_stub} Ω")
         self.inputImpedanceEntry = tk.Entry(self.rightParameterFrame, textvariable=self.inputImpedanceText, state="readonly", font=("Times", 14), width=50).grid(column=0,row=row)
         row+=1
-
-        tk.Label(self.rightParameterFrame, text="Parameters", bg="#D3D3D3", font=("Times", 20)).grid(column=0,row=row)
+        self.Gamma = None # reflection coefficient Γ = (Z_in - Z_0) / (Z_in + Z_0)
+        self.VSWR = None # voltage standing wave ratio S = (1 + |Γ|) / (1 - |Γ|)
+        self.reflectionText = tk.StringVar(value=f"Γ = {self.Gamma}, VSWR = {self.VSWR}")
+        self.reflectionEntry = tk.Entry(self.rightParameterFrame, textvariable=self.reflectionText, state="readonly", font=("Times", 14), width=50).grid(column=0,row=row)
         row+=1
+        tk.Label(self.rightParameterFrame, text="", bg="#D3D3D3", font=("Times", 14)).grid(column=0,row=row) # spacer
+        row+=1
+        # tk.Label(self.rightParameterFrame, text="Parameters", bg="#D3D3D3", font=("Times", 20)).grid(column=0,row=row)
+        # row+=1
 
         self.distance=0
         self.distanceSlider = tk.Scale(self.rightParameterFrame,from_=0,to=0.5,digits=3,resolution=0.001,tickinterval=0.1,orient=tk.HORIZONTAL,command=self.getDistance,
@@ -86,9 +92,6 @@ class Simulator(tk.Frame):
                                         length=(self.width*(1-self.ratio)),label="Set length of stub, l (in terms of wavelengths λ)",font=("Times", 14),bg="#A9A9A9")
         self.lengthSlider.set(self.length)
         self.lengthSlider.grid(column=0,row=row)
-        row+=1
-
-        tk.Label(self.rightParameterFrame, text="", bg="#D3D3D3", font=("Times", 14)).grid(column=0,row=row) # spacer
         row+=1
 
         tk.Label(self.rightParameterFrame, text="Transmission line characteristic impedance, Z_0 (Ω)", bg="#D3D3D3", font=("Times", 14)).grid(column=0,row=row)
@@ -108,6 +111,8 @@ class Simulator(tk.Frame):
         self.loadImpedanceInput.grid(column=0,row=row)
         row+=1
         self.loadImpedanceInput.bind("<Return>",self.handleLoadImpedanceInput)
+
+        self.updateInputImpedance()
 
     def displayDiagram(self, filename):
         img = (Image.open(filename))
@@ -131,7 +136,7 @@ class Simulator(tk.Frame):
     def handleCharImpedanceInput(self, event):
         try:
             Z_0 = complex(self.charImpedance.get())
-            if(abs(Z_0)>0):
+            if(Z_0.real >= 0):
                 self.charImpedance.set(Z_0)
             else:
                 self.charImpedance.set(self.defaultCharImpedance)
@@ -235,6 +240,15 @@ class Simulator(tk.Frame):
             self.inputImpedance = complex(round(self.inputImpedance.real,self.precision),round(self.inputImpedance.imag,self.precision))
         else:
             assert False, "WTF"
+
+        Z_in = self.inputImpedance
+        self.Gamma = (Z_in - Z_0) / (Z_in + Z_0)
+        Gamma_polar = cmath.polar(self.Gamma)
+        Gamma_polar = (Gamma_polar[0], Gamma_polar[1] + 2*math.pi if Gamma_polar[1] < 0 else Gamma_polar[1])
+        self.VSWR = (1 + abs(self.Gamma)) / (1 - abs(self.Gamma)) if abs(self.Gamma) != 1 else cmath.inf
+        Gamma_polar = (round(Gamma_polar[0],self.precision),round(Gamma_polar[1]*180/math.pi,self.precision))
+        self.VSWR = round(self.VSWR, self.precision)
+        self.reflectionText.set(f"Γ = {Gamma_polar[0]}exp({Gamma_polar[1]}), VSWR = {self.VSWR}")
 
 root = tk.Tk()
 a = Simulator(root)
