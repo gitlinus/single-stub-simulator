@@ -53,7 +53,7 @@ class SmithChart:
         use_this_turtle.pendown()
         use_this_turtle.setpos(x=x2*self.scaling,y=y2*self.scaling)
     
-    def plotSmithChartPoint(self, z, label=True, precision=3, new_turtle=None): # plot the point z = r + jx on the Smith chart
+    def plotSmithChartPoint(self, z, label=True, precision=3, new_turtle=None, colour="yellow"): # plot the point z = r + jx on the Smith chart
         # find the intersection of resistance circle at z.real and reactance circle at z.imag
         # the intersection lies on line y=mx+b
         use_this_turtle = self.smith_turtle
@@ -71,10 +71,23 @@ class SmithChart:
         y_2=m*x_2+b
         use_this_turtle.penup()
         use_this_turtle.home()
+        if(math.isnan(x_2)):
+            if(z.real == cmath.inf):
+                x_2 = 1
+                y_2 = 0
+            else:
+                x_2 = -1
+                y_2 = 0
+        # print(f"plotting point ({x_2},{y_2})")
         use_this_turtle.setpos(x=x_2*self.scaling,y=y_2*self.scaling)
-        use_this_turtle.pencolor("yellow")
+        use_this_turtle.pencolor(colour)
         if label:
-            z_label = complex(round(z.real,precision), round(z.imag,precision))
+            if (x_2,y_2) == (1,0):
+                z_label = complex(cmath.inf, cmath.inf)
+            elif (x_2,y_2) == (-1,0):
+                z_label = complex(0,0)
+            else:
+                z_label = complex(round(z.real,precision), round(z.imag,precision))
             use_this_turtle.write(z_label, align='right', font=('Arial', str(self.font), 'normal'))
         use_this_turtle.dot()
 
@@ -83,7 +96,10 @@ class SmithChart:
         if new_turtle:
             use_this_turtle = new_turtle
 
-        Gamma_L = (Z_in-Z_0) / (Z_in+Z_0) # reflection coefficient
+        if(Z_in == cmath.inf):
+            Gamma_L = 1
+        else:
+            Gamma_L = (Z_in-Z_0) / (Z_in+Z_0) # reflection coefficient
         if VSWR: # plot the voltage standing wave ratio (VSWR) circle
             self.drawCircle(x=0,y=0,r=abs(Gamma_L),new_turtle=new_turtle)
             use_this_turtle.penup()
@@ -91,10 +107,12 @@ class SmithChart:
             use_this_turtle.setpos(x=0,y=abs(Gamma_L)*self.scaling)
             use_this_turtle.write("VSWR", align='right', font=('Arial', str(self.font), 'normal'))
         z = complex(Z_in/Z_0) # normalized impedance
+        # print(f"z:{z}")
         self.plotSmithChartPoint(z, new_turtle=new_turtle)
         if admittance:
-            y = 1 / z
-            self.plotSmithChartPoint(y, new_turtle=new_turtle)
+            y = 1 / z if z != 0 else complex(cmath.inf)
+            # print(f"y:{y}")
+            self.plotSmithChartPoint(y, new_turtle=new_turtle, colour="#ff66ff")
 
     def drawResistanceCircles(self, r_L_list=[0, 0.5, 1, 2, 3], label=True):
         # ( Gamma_r - r_L/(1+r_L) ) ^ 2 + Gamma_i ^ 2 = ( 1/(1+r_L) ) ^ 2
@@ -152,5 +170,23 @@ class SmithChart:
 if __name__ == "__main__":
     a=SmithChart()
     a.drawChart()
-    a.plotNormalizedImpedance(50,complex(75,-50),VSWR=True,admittance=True) # example
+    while(True):
+        Z_0 = input("Transmission line characteristic impedance: ")
+        try:
+            Z = complex(Z_0)
+            if Z.real > 0 and Z.real < cmath.inf:
+                break
+        except:
+            pass
+        print("Invlid input")
+    while(True):
+        Z_L = input("Input or load impedance (a+bj): ")
+        try:
+            Z = complex(Z_L)
+            if Z.real >= 0:
+                break
+        except:
+            pass
+        print("Invalid input")
+    a.plotNormalizedImpedance(complex(Z_0),complex(Z_L),VSWR=True,admittance=True) # example
     a.execMainLoop()

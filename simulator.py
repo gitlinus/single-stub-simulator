@@ -144,7 +144,7 @@ class Simulator(tk.Frame):
     def handleCharImpedanceInput(self, event):
         try:
             Z_0 = complex(self.charImpedance.get())
-            if(Z_0.real >= 0):
+            if(Z_0.real > 0):
                 self.charImpedance.set(Z_0)
             else:
                 self.charImpedance.set(self.defaultCharImpedance)
