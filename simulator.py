@@ -68,12 +68,12 @@ class Simulator(tk.Frame):
         self.Z_stub = cmath.inf if self.stubTermination.get()=="open" else 0
         self.inputImpedance = self.Z_1
         self.inputImpedanceText = tk.StringVar(value=f"Zin = {self.inputImpedance} Ω, Z1 = {self.Z_1} Ω, Zstub = {self.Z_stub} Ω")
-        self.inputImpedanceEntry = tk.Entry(self.rightParameterFrame, textvariable=self.inputImpedanceText, state="readonly", font=("Times", 14), width=50).grid(column=0,row=row)
+        self.inputImpedanceEntry = tk.Entry(self.rightParameterFrame, textvariable=self.inputImpedanceText, state="readonly", font=("Times", 14), width=55).grid(column=0,row=row)
         row+=1
         self.Gamma = None # reflection coefficient Γ = (Z_in - Z_0) / (Z_in + Z_0)
         self.VSWR = None # voltage standing wave ratio S = (1 + |Γ|) / (1 - |Γ|)
         self.reflectionText = tk.StringVar(value=f"Γ = {self.Gamma}, VSWR = {self.VSWR}")
-        self.reflectionEntry = tk.Entry(self.rightParameterFrame, textvariable=self.reflectionText, state="readonly", font=("Times", 14), width=50).grid(column=0,row=row)
+        self.reflectionEntry = tk.Entry(self.rightParameterFrame, textvariable=self.reflectionText, state="readonly", font=("Times", 14), width=55).grid(column=0,row=row)
         row+=1
         tk.Label(self.rightParameterFrame, text="", bg="#D3D3D3", font=("Times", 14)).grid(column=0,row=row) # spacer
         row+=1
