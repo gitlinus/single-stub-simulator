@@ -1,6 +1,6 @@
 # Single Stub Tuner Simulator
 
-A Python simulator for single stub matching network under lossless transmission line condition
+A simulator for single stub matching network under lossless transmission line condition made using Python Tkinter and Turtle
 - allows selection between series or shunt stub and open or short stub
 
 ![simulator_screenshot](https://user-images.githubusercontent.com/42019089/210158911-a3f2e6c9-8100-4277-a3ce-7472365334cd.png)
