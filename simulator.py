@@ -267,11 +267,10 @@ class Simulator(tk.Frame):
         Z_in = self.inputImpedance
         self.Gamma = (Z_in - Z_0) / (Z_in + Z_0)
         Gamma_polar = cmath.polar(self.Gamma)
-        Gamma_polar = (Gamma_polar[0], Gamma_polar[1] + 2*math.pi if Gamma_polar[1] < 0 else Gamma_polar[1])
         self.VSWR = (1 + abs(self.Gamma)) / (1 - abs(self.Gamma)) if abs(self.Gamma) != 1 else cmath.inf
-        Gamma_polar = (round(Gamma_polar[0],self.precision),round(Gamma_polar[1]*180/math.pi,self.precision))
+        Gamma_polar = (round(Gamma_polar[0],self.precision),round(Gamma_polar[1]*180/math.pi,self.precision)) # convert phase angle to degrees
         self.VSWR = round(self.VSWR, self.precision)
-        self.reflectionText.set(f"Γ = {Gamma_polar[0]}exp({Gamma_polar[1]}), VSWR = {self.VSWR}")
+        self.reflectionText.set(f"Γ = {Gamma_polar[0]}exp(j{Gamma_polar[1]}°), VSWR = {self.VSWR}")
 
         # plot the point on the Smith chart
         self.simulator_turtle.clear()
