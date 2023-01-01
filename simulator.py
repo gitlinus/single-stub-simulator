@@ -148,19 +148,17 @@ class Simulator(tk.Frame):
         self.master.focus()
         self.updateInputImpedance()
 
-    def handleCharImpedanceInput(self, event):
+    def updateCharImpedance(self):
         try:
             Z_0 = complex(self.charImpedance.get())
-            if(Z_0.real > 0):
+            if(Z_0.real > 0 and Z_0.real < cmath.inf):
                 self.charImpedance.set(Z_0)
             else:
                 self.charImpedance.set(self.defaultCharImpedance)
         except:
             self.charImpedance.set(self.defaultCharImpedance)
-        self.updateInputImpedance()
-        self.master.focus()
 
-    def handleLoadImpedanceInput(self, event):
+    def updateLoadImpedance(self):
         try:
             Z_L = complex(self.loadImpedance.get())
             if(Z_L.real >= 0):
@@ -173,6 +171,14 @@ class Simulator(tk.Frame):
                 self.loadImpedance.set(Z_L)
             else:
                 self.loadImpedance.set(self.defaultLoadImpedance)
+
+    def handleCharImpedanceInput(self, event):
+        self.updateCharImpedance()
+        self.updateInputImpedance()
+        self.master.focus()
+
+    def handleLoadImpedanceInput(self, event):
+        self.updateLoadImpedance()
         self.updateInputImpedance()
         self.master.focus()
 
@@ -185,26 +191,8 @@ class Simulator(tk.Frame):
         self.updateInputImpedance()
 
     def updateInputImpedance(self):
-        try:
-            Z_0 = complex(self.charImpedance.get())
-            if(Z_0.real > 0):
-                self.charImpedance.set(Z_0)
-            else:
-                self.charImpedance.set(self.defaultCharImpedance)
-        except:
-            self.charImpedance.set(self.defaultCharImpedance)
-        try:
-            Z_L = complex(self.loadImpedance.get())
-            if(Z_L.real >= 0):
-                self.loadImpedance.set(Z_L)
-            else:
-                self.loadImpedance.set(self.defaultLoadImpedance)
-        except:
-            if(self.loadImpedance.get()=="inf"):
-                Z_L = complex(cmath.inf)
-                self.loadImpedance.set(Z_L)
-            else:
-                self.loadImpedance.set(self.defaultLoadImpedance)
+        self.updateCharImpedance()
+        self.updateLoadImpedance()
         # For Z_1
         # Z_1 = Z_0 * (Z_L + j*Z_0*tan(βd)) / (Z_0 + j*Z_L*tan(βd)) where β = 2π/λ
         Z_0 = complex(self.charImpedance.get())
@@ -220,17 +208,17 @@ class Simulator(tk.Frame):
                 self.Z_1 = Z_0 * (Z_L + j*Z_0*math.tan(2*math.pi * d)) / (Z_0 + j*Z_L*math.tan(2*math.pi * d))
         elif Z_L == cmath.inf:
             # Z_1 = -j*Z_0*cot(βd)
-            if self.length == 0.25:
+            if self.distance == 0.25:
                 self.Z_1 = 0
-            elif self.length == 0 or self.length == 0.5:
+            elif self.distance == 0 or self.distance == 0.5:
                 self.Z_1 = cmath.inf
             else:
                 self.Z_1 = -j*Z_0/math.tan(2*math.pi * d)
         else: # Z_L == 0
             # Z_1 = j*Z_0*tan(βd)
-            if self.length == 0.25:
+            if self.distance == 0.25:
                 self.Z_1 = cmath.inf
-            elif self.length == 0 or self.length == 0.5:
+            elif self.distance == 0 or self.distance == 0.5:
                 self.Z_1 = 0
             else:
                 self.Z_1 = j*Z_0*math.tan(2*math.pi * d)
