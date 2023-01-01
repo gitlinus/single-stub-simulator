@@ -31,6 +31,9 @@ class Simulator(tk.Frame):
         self.leftCanvas.grid(column=0,row=0)
         self.screen = turtle.TurtleScreen(self.leftCanvas)
         self.smith = smith_chart.SmithChart(self.screen)
+        self.simulator_turtle = turtle.RawTurtle(self.screen)
+        self.simulator_turtle.hideturtle()
+        self.simulator_turtle.speed(0)
 
         self.rightFrame = tk.Frame(master=self.rootFrame, width=width*(1-self.ratio), height=self.height, bg="white")
         self.rightFrame.grid(column=1,row=0)
@@ -49,7 +52,7 @@ class Simulator(tk.Frame):
         tk.Label(self.rightSelectFrame, text="", bg="#A9A9A9", font=("Times", 14)).grid(column=0,row=row) # spacer
         row+=1
         tk.Label(self.rightSelectFrame, text="Select stub type:", bg="#A9A9A9", font=("Times", 16)).grid(column=0,row=row)
-        self.stubType = tk.StringVar(value="series stub")
+        self.stubType = tk.StringVar(value="series stub") # default to series stub
         self.stubTypeChosen = ttk.Combobox(self.rightSelectFrame, width=20, textvariable=self.stubType)
         self.stubTypeChosen['values'] = ('series stub','shunt stub')
         self.stubTypeChosen.grid(column=1,row=row)
@@ -59,7 +62,7 @@ class Simulator(tk.Frame):
         self.stubTypeChosen.bind('<<ComboboxSelected>>',self.handleStubTypeSelection)
 
         tk.Label(self.rightSelectFrame, text="Select stub termination:", bg="#A9A9A9", font=("Times", 16)).grid(column=0,row=row)
-        self.stubTermination = tk.StringVar(value="open")
+        self.stubTermination = tk.StringVar(value="short") # default to short
         self.stubTerminationChosen = ttk.Combobox(self.rightSelectFrame, width=20, textvariable=self.stubTermination)
         self.stubTerminationChosen['values'] = ('open','short')
         self.stubTerminationChosen.grid(column=1,row=row)
@@ -69,7 +72,7 @@ class Simulator(tk.Frame):
 
         self.diagramCanvas = tk.Canvas(self.rightDiagramFrame,bg="white",width=(self.width*(1-self.ratio)),height=(self.height/2*2/3))
         self.diagramCanvas.grid(column=0,row=0)
-        self.displayDiagram("series_stub.png")
+        self.displayDiagram("series_stub.png") # default to series stub
 
         row=0
         self.Z_1 = complex(self.defaultLoadImpedance)
@@ -133,6 +136,10 @@ class Simulator(tk.Frame):
         # print(f"{self.stubType.get()} selected")
         # print(f"Displaying file {self.stubType2filename[self.stubType.get()]}")
         self.displayDiagram(self.stubType2filename[self.stubType.get()])
+        if(self.stubType.get() == 'series stub'): # set series stub default to short termination
+            self.stubTermination.set('short')
+        else: # set shunt stub default to open termination
+            self.stubTermination.set('open')
         self.master.focus()
         self.updateInputImpedance()
 
@@ -178,6 +185,26 @@ class Simulator(tk.Frame):
         self.updateInputImpedance()
 
     def updateInputImpedance(self):
+        try:
+            Z_0 = complex(self.charImpedance.get())
+            if(Z_0.real > 0):
+                self.charImpedance.set(Z_0)
+            else:
+                self.charImpedance.set(self.defaultCharImpedance)
+        except:
+            self.charImpedance.set(self.defaultCharImpedance)
+        try:
+            Z_L = complex(self.loadImpedance.get())
+            if(Z_L.real >= 0):
+                self.loadImpedance.set(Z_L)
+            else:
+                self.loadImpedance.set(self.defaultLoadImpedance)
+        except:
+            if(self.loadImpedance.get()=="inf"):
+                Z_L = complex(cmath.inf)
+                self.loadImpedance.set(Z_L)
+            else:
+                self.loadImpedance.set(self.defaultLoadImpedance)
         # For Z_1
         # Z_1 = Z_0 * (Z_L + j*Z_0*tan(βd)) / (Z_0 + j*Z_L*tan(βd)) where β = 2π/λ
         Z_0 = complex(self.charImpedance.get())
@@ -258,6 +285,11 @@ class Simulator(tk.Frame):
         self.VSWR = round(self.VSWR, self.precision)
         self.reflectionText.set(f"Γ = {Gamma_polar[0]}exp({Gamma_polar[1]}), VSWR = {self.VSWR}")
 
-root = tk.Tk()
-a = Simulator(root)
-a.mainloop()
+        # plot the point on the Smith chart
+        self.simulator_turtle.clear()
+        self.smith.plotNormalizedImpedance(Z_0=Z_0, Z_in=Z_in, admittance=(self.stubType.get()=='shunt stub'), new_turtle=self.simulator_turtle)
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    a = Simulator(root)
+    a.mainloop()

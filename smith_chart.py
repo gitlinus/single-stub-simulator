@@ -96,7 +96,7 @@ class SmithChart:
         if new_turtle:
             use_this_turtle = new_turtle
 
-        if(Z_in == cmath.inf):
+        if(abs(Z_in) == cmath.inf):
             Gamma_L = 1
         else:
             Gamma_L = (Z_in-Z_0) / (Z_in+Z_0) # reflection coefficient
